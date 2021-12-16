@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'ai_club',
 ]
 
 MIDDLEWARE = [
@@ -75,9 +76,13 @@ WSGI_APPLICATION = 'nckuh_cv_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'ncku_cv', #資料庫名稱 
+        'USER': 'root', #登錄用戶 
+        'PASSWORD': '3064abee', #登錄密碼 
+        'HOST': '127.0.0.1', #資料庫位置 
+        'PORT': '3306', #資料庫監聽埠
+        }
 }
 
 
