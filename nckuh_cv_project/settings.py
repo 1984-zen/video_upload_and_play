@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'ai_club',
+    'chunked_upload',
 ]
 
 MIDDLEWARE = [
@@ -55,7 +56,7 @@ ROOT_URLCONF = 'nckuh_cv_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -63,6 +64,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media', #用來可以在template加上{{MEDIA_URL}}
+                'django.template.context_processors.csrf'
             ],
         },
     },
@@ -77,11 +80,11 @@ WSGI_APPLICATION = 'nckuh_cv_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ncku_cv', #資料庫名稱 
-        'USER': 'root', #登錄用戶 
-        'PASSWORD': '3064abee', #登錄密碼 
-        'HOST': '127.0.0.1', #資料庫位置 
-        'PORT': '3306', #資料庫監聽埠
+        'NAME': 'ncku_cv',
+        'USER': 'root',
+        'PASSWORD': '3064abee',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
         }
 }
 
@@ -110,16 +113,24 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Taipei'
 
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False # 記得要 migrate 的時候要改成 True 才能 migrate 正常
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+MEDIA_URL = '/media/' #這是環境變數
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media') #這個不加會顯示不出來圖片/影片的路徑

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="content-type" content="text/html;charset=utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>django-chunked-upload demo</title>
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+        <link rel="stylesheet" type="text/css" href="/static/demo/css/demo.css">
+    </head>
+
+    <body>
+        {% block content %}
+        <!-- <video width='400' controls><source src="{{ MEDIA_URL }}/chunked_uploads/2022/01/06/be42b2d663614305a517f298b3373fa4.part" type='video/mp4'></source>Your browser does not support the video tag.</video> -->
+        <div id="app">
+            <ol class="breadcrumb my-4">
+                <li class="breadcrumb-item"><a href="{% url 'mou_home' %}">首頁</a></li>
+                <li class="breadcrumb-item">上傳{{ mou_date }}讀書會檔案</li>
+            </ol>
+
+            <div id="add_new_mou">
+                {% csrf_token %}
+                <input id="chunked_upload" type="file" name="the_file">
+                <!-- 秀出上傳檔案的進度條 -->
+                <p id="progress"></p>
+                <!-- 秀出上傳檔案的每個細分的小檔案訊息 -->
+                <!-- <div id="messages"></div> -->
+                <!-- 秀出完成檔案訊息，但功能尚未完成!!! -->
+                <div id="messages_done"></div>
+
+                <div class="well text-muted text-center" style="padding-top: 4rem; padding-bottom: 4rem;">
+                    <span class="glyphicon glyphicon-arrow-down" style="font-size: 4rem;"></span>
+                    {% if all_files_name %}
+                        <h3>已經上傳檔案:</h3>
+                        {% for file_name in all_files_name %}
+                            <p>{{ file_name }}</p>
+                        {% endfor %}
+                    {% endif %}
+               </div>
+
+                <div class="form-popup" id="myForm">
+                    <form method="POST" class="form-container" autocomplete="off">{% csrf_token %}
+
+                        <div class="tab">
+                            <h1>{{ mou_date }} 讀書會備註:</h1>
+
+                            <h3><label><strong>{{ form.title.label }}</strong></label></h3>
+                            <p>{{ form.title }}</p>
+                            <div id="form_messages_title_error" style="color: red;"></div>
+
+                            <h3><label><strong>{{ form.content.label }}</strong></label></h3>
+                            <p>{{ form.content }}</p>
+                        </div>
+                    </form>
+                    <button id="submit-mou" type="submit">儲存</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="/static/demo/js/jquery.js"></script>
+        <script src="/static/demo/js/jquery.ui.widget.js"></script>
+        <!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+        <script src="/static/demo/js/jquery.iframe-transport.js"></script>
+        <!-- The basic File Upload plugin -->
+        <script src="/static/demo/js/jquery.fileupload.js"></script>
+        <!-- Calculate md5 -->
+        <script src="/static/demo/js/spark-md5.js"></script>
+        <script type="text/javascript">
+
+            var processing = false
+            var md5 = "",
+                csrf = $("input[name='csrfmiddlewaretoken']")[0].value,
+                form_data = [{ "name": "csrfmiddlewaretoken", "value": csrf }];
+            function calculate_md5(file, chunk_size) {
+                var slice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
+                    chunks = chunks = Math.ceil(file.size / chunk_size),
+                    current_chunk = 0,
+                    spark = new SparkMD5.ArrayBuffer();
+
+                function onload(e) {
+                    spark.append(e.target.result);  // append chunk
+                    current_chunk++;
+                    if (current_chunk < chunks) {
+                        read_next_chunk();
+                    } else {
+                        md5 = spark.end();
+                    }
+                };
+
+                function read_next_chunk() {
+                    var reader = new FileReader();
+                    reader.onload = onload;
+                    var start = current_chunk * chunk_size,
+                        end = Math.min(start + chunk_size, file.size);
+                    reader.readAsArrayBuffer(slice.call(file, start, end));
+                };
+                read_next_chunk();
+            }
+
+            // 防止 user 連續上傳檔案
+            $('#chunked_upload').click(function () {
+                if (processing) {
+                        alert('檔案上傳中，請稍候!');
+                        return false;
+                    }
+            })
+
+            $("#chunked_upload").fileupload({
+                url: "{% url 'api_chunked_upload' %}",
+                dataType: "json",
+                maxChunkSize: 100000, // Chunks of 100 kB
+                formData: form_data,
+                add: function (e, data) { // Called before starting upload
+                    $("#messages").empty();
+                    // If this is the second file you're uploading we need to remove the
+                    // old upload_id and just keep the csrftoken (which is always first).
+                    form_data.splice(1);
+                    calculate_md5(data.files[0], 100000);  // Again, chunks of 100 kB
+                    data.submit();
+                },
+                chunkdone: function (e, data) { // Called after uploading each chunk
+                    processing = true
+                    if (form_data.length < 2) {
+                        form_data.push(
+                            { "name": "upload_id", "value": data.result.upload_id }
+                        );
+                    }
+                    $("#messages").append($('<p>').text(JSON.stringify(data.result)));
+                    var progress = parseInt(data.loaded / data.total * 100.0, 10);
+                    $("#progress").text(Array(progress).join("=") + "> " + progress + "%");
+                },
+                done: function (e, data) { // Called when the file has completely uploaded
+                    // 修改 正在上傳的狀態
+                    processing = false;
+                    $.ajax({
+                        type: "POST",
+                        url: "{% url 'api_chunked_upload_complete' %}",
+                        data: {
+                            csrfmiddlewaretoken: csrf,
+                            upload_id: data.result.upload_id,
+                            md5: md5,
+                            mou_id: JSON.parse("{{ mou_id }}"),
+                        },
+                        dataType: "json",
+                        success: function (data) {
+                            // 這裡因為上傳完畢會立即轉跳頁面，所以會來不及看到這個 messages_done 的訊息
+                            $("#messages_done").append($('<p>').text(JSON.stringify(data)));
+                                window.location = `upload/mous/${JSON.parse("{{ mou_id }}")}/`
+                        }
+                    });
+                },
+            });
+        </script>
+        <!-- 這裡是給 提交 title 和 content 的 form 表單 -->
+        <script type="text/javascript">
+            // 表單顯示 on/ off
+            function openForm() {
+                document.getElementById("myForm").style.display = "block";
+            }
+
+            // 點選 儲存 後表單會凍結，這樣user 就不能再去修改
+            $('#submit-mou').click(function (e) {
+                $('#mou_title_input').attr('readonly', 'readonly');
+                $('#mou_title_input').css({'border':'0', 'overflow-y':'auto', 'resize':'none', 'outline':'0'})
+                $('#mou_content_input').attr('readonly', 'readonly');
+                $('#mou_content_input').css({'border':'0', 'overflow-y':'auto', 'resize':'none', 'outline':'0'});
+                $('#submit-mou').css({'pointer-events': 'none', 'color': 'gray'})
+            })
+
+            // 點選儲存 submit-mou
+            $('#submit-mou').click(async function (e) {
+                let form_data = new FormData();
+                form_data.append('title', `${$("#mou_title_input").val()}`)
+                form_data.append('content', `${$("#mou_content_input").val()}`)
+                form_data.append('csrfmiddlewaretoken', csrf)
+                form_data.append('mou_id', JSON.parse("{{ mou_id }}"))
+
+                $.ajax({
+                    type: "POST",
+                    url: `{% url 'api_mou_update' mou_id=mou_id %}`,
+                    data: form_data,
+                    contentType: false,
+                    processData: false,
+                    dataType: "json",
+                    success: function (data) {
+                        // 以下只有在後端傳遞 200 status 的時候才能在success 情況下去 console.log()
+                        if (data['valid'] == 'true') {
+                            console.log(data.valid)
+                        }
+                        console.log(data['errors'])
+                    },
+                    error: function (request, status, error) {
+                        // 把字數太少的限制顯示在 HTML
+                        $("#form_messages_title_error").text(JSON.parse(request.responseText).errors.title[0])
+                    }
+                });
+            })
+        </script>
+        {% endblock %}
+    </body>
+</html>
