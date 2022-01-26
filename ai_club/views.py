@@ -15,16 +15,30 @@ from django.urls import reverse
 from django.views.generic import View
 from django.views.generic.base import TemplateView
 from django.views.generic import ListView
+from django.utils import timezone
+from django.http.response import StreamingHttpResponse
+from wsgiref.util import FileWrapper
+import re
+import mimetypes
 
-
-class mousHomeView(View):
+class homeView(View):
     template_name = 'home.html'
     model = mous
 
     def get(self, request, *args, **kwargs):
         select_date = SelectDateForm()
+        today = timezone.now()
+        # 從 forms.py 拿到內建的日期選擇器
         context = {'select_date': select_date}
-    
+        mous = self.model.objects.all().order_by('-created_at')
+
+        context['mous'] = []
+        days = None
+        for mou in mous:
+            if mou.created_at:
+                days = today - mou.created_at
+            context['mous'].append((mou, days))
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -43,6 +57,82 @@ class mousHomeView(View):
             print(repr(e))
 
         return HttpResponseRedirect(reverse("upload_file_page", kwargs={"mou_id": mou_id}))
+
+range_re = re.compile(r'bytes\s*=\s*(\d+)\s*-\s*(\d*)', re.I)
+
+
+class RangeFileWrapper(object):
+    def __init__(self, filelike, blksize=8192, offset=0, length=None):
+        self.filelike = filelike
+        self.filelike.seek(offset, os.SEEK_SET)
+        self.remaining = length
+        self.blksize = blksize
+
+    def close(self):
+        if hasattr(self.filelike, 'close'):
+            self.filelike.close()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.remaining is None:
+            # If remaining is None, we're reading the entire file.
+            data = self.filelike.read(self.blksize)
+            if data:
+                return data
+            raise StopIteration()
+        else:
+            if self.remaining <= 0:
+                raise StopIteration()
+            data = self.filelike.read(min(self.remaining, self.blksize))
+            if not data:
+                raise StopIteration()
+            self.remaining -= len(data)
+            return data
+
+def stream_video(request, video_path):
+    print("here", video_path)
+    range_header = request.META.get('HTTP_RANGE', '').strip()
+    range_match = range_re.match(range_header)
+    size = os.path.getsize(video_path)
+    content_type, encoding = mimetypes.guess_type(video_path)
+    content_type = content_type or 'application/octet-stream'
+    if range_match:
+        first_byte, last_byte = range_match.groups()
+        first_byte = int(first_byte) if first_byte else 0
+        last_byte = int(last_byte) if last_byte else size - 1
+        if last_byte >= size:
+            last_byte = size - 1
+        length = last_byte - first_byte + 1
+        resp = StreamingHttpResponse(RangeFileWrapper(open(video_path, 'rb'), offset=first_byte, length=length), status=206, content_type=content_type)
+        resp['Content-Length'] = str(length)
+        resp['Content-Range'] = 'bytes %s-%s/%s' % (first_byte, last_byte, size)
+        print("here")
+    else:
+        resp = StreamingHttpResponse(FileWrapper(open(video_path, 'rb')), content_type=content_type)
+        resp['Content-Length'] = str(size)
+    resp['Accept-Ranges'] = 'bytes'
+    return resp
+
+
+class mouView(View):
+    template_name = 'room.html'
+    model = mous
+
+    def get(self, request, *args, **kwargs):
+        mou_id = kwargs['mou_id']
+        all_files_id_list = MyChunkedUpload.objects.filter(mou_id=mou_id)
+        all_files_id_list = all_files_id_list.values_list('chunkedupload_ptr', flat = True)
+        # icontains 的 i 就是不分大小寫
+        mou_medias = ChunkedUpload.objects.filter(id__in=all_files_id_list).filter(filename__icontains='.mp4').filter(status=2).values('filename','file').order_by('-created_on')
+        mou_other_files = ChunkedUpload.objects.filter(id__in=all_files_id_list).exclude(filename__icontains='.mp4').filter(status=2).values('filename','file').order_by('-created_on')
+        context = {
+            'mou_medias': mou_medias,
+            'mou_other_files': mou_other_files
+            }
+
+        return render(request, self.template_name, context)
 
 
 class mousUpdate(View):

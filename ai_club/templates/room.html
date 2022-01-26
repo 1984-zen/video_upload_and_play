@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="content-type" content="text/html;charset=utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>讀書會</title>
+        {% load static %}
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/custom_video_player.css' %}">
+    </head>
+
+    <body>
+        {% block content %}
+        <div id="app">
+            <ol class="breadcrumb my-4">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">首頁</a></li>
+                <li class="breadcrumb-item">{{ mou_date }}讀書會</li>
+            </ol>
+
+            <!-- boostrap light box Modal start-->
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="player">
+                        <video class="player__video viewer" src="" preload="auto"></video>
+                        <div class="player__controls">
+                            <div class="progress">
+                                <div class="progress__filled"></div>
+                            </div>
+                            <button class="player__button toggle" title="Toggle Play">►</button>
+                            <input type="range" name="volume" class="player__slider" min="0" max="1" step="0.05" value="1">
+                            <input type="range" name="playbackRate" class="player__slider" min="0.5" max="2" step="0.1" value="1">
+                            <button data-skip="-10" class="player__button">« 10s</button>
+                            <button data-skip="25" class="player__button">25s »</button>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- boostrap light box Modal end-->
+
+            <div id="mou_movies" class="introduce_video_container">
+                <h1>讀書會影片：</h1>
+                {% if mou_medias %}
+                    {% for media in mou_medias %}
+                        <div>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" data-videoPath="{{ media.file }}">
+                                {{ media.filename }}
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <span>無</span>
+                {% endif %}       
+            </div>
+
+            <div id="mou_attachments" style="background-color: rgb(233, 233, 233); padding: 20px;">
+                <p>附件：</p>
+                {% if mou_other_files %}
+                    {% for doc in mou_other_files %}
+                        <div>
+                            <a href="{{ MEDIA_URL }}{{ doc.file }}" style="display: block; margin-bottom: 5px;"><div>{{ doc.filename }}</div></a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <span>無</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <script src="{% static 'jquery/jquery-3.5.1.min.js' %}" charset="UTF-8" type="text/javascript"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous" charset="UTF-8" type="text/javascript"></script>
+        <script src="{% static 'js/custom_video_player.js' %}" charset="UTF-8" type="text/javascript"></script>
+        <!-- 拿到 button 中的 video_path -->
+        <script charset="UTF-8" type="text/javascript">
+            $('#app').on('click', '.introduce_video_container > div > button', function(event){ //只有用HTML的標籤和id能夠分辨出使用者是按了哪個按鈕，為了減少重複一樣的的code，所以決定用button標籤去做，在這個網站，只有播放影片才會使用button標籤
+                var videoPath = $(this).attr('data-videoPath'); // 抓出摸到這個 button 的 data-videoPath 值
+                videoPath = `/api/stream_video{{ MEDIA_URL }}${videoPath}`;
+                console.log("nn",videoPath)
+                $('video')[0].src = videoPath; // 因為本頁只有一個HTML5的video標籤，所以$('video')[0]是取第一個 video 標籤
+                event.preventDefault();
+            });
+        </script>
+        {% endblock %}
+    </body>
+</html>

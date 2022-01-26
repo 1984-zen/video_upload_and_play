@@ -1,4 +1,8 @@
 /* 以下是手機板 */
+html {
+    margin: 0 auto;
+    max-width: 1000px;
+}
 #app {
     max-width: 80%;
     width: 100%;
@@ -37,7 +41,19 @@
 #add_new_mou form > ul {
     padding-top: 30px;
 }
-
+/* form 表單的 css start */
+textarea {
+    padding: 10px;
+    width: 100%;
+    font-size: 17px;
+    font-family: Raleway;
+    border: 1px solid #aaaaaa;
+}
+/* Mark input boxes that gets an error on validation: */
+input.invalid {
+    background-color: #ffdddd;
+}
+/* form 表單的 css end */
 
 /* 以下是桌機板 */
 @media screen and (min-width:768px)
