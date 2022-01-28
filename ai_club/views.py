@@ -14,12 +14,14 @@ from datetime import datetime
 from django.urls import reverse
 from django.views.generic import View
 from django.views.generic.base import TemplateView
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
+from django.views.generic.edit import DeletionMixin, UpdateView
 from django.utils import timezone
 from django.http.response import StreamingHttpResponse
 from wsgiref.util import FileWrapper
 import re
 import mimetypes
+from django.core.exceptions import ObjectDoesNotExist
 
 class homeView(View):
     template_name = 'home.html'
@@ -108,7 +110,6 @@ def stream_video(request, video_path):
         resp = StreamingHttpResponse(RangeFileWrapper(open(video_path, 'rb'), offset=first_byte, length=length), status=206, content_type=content_type)
         resp['Content-Length'] = str(length)
         resp['Content-Range'] = 'bytes %s-%s/%s' % (first_byte, last_byte, size)
-        print("here")
     else:
         resp = StreamingHttpResponse(FileWrapper(open(video_path, 'rb')), content_type=content_type)
         resp['Content-Length'] = str(size)
@@ -135,32 +136,55 @@ class mouView(View):
         return render(request, self.template_name, context)
 
 
-class mousUpdate(View):
+class mousUpdate(UpdateView, DeletionMixin):
     template_name = 'upload_files.html'
     model = mous
+    fields = ['title','content']
 
     def post(self, request, *args, **kwargs):
-        form = RegisterMOUForm(request.POST)
+        if request.is_ajax() and request.POST.get('title') and request.POST.get('content'):
+            form = RegisterMOUForm(request.POST)
+            # 或是 request.POST 可以替代如下
+            # form = RegisterMOUForm({'title':request.POST.get('title'), 'content':request.POST.get('content')})
+            if form.errors:
+                # 使用 valid 是 true 或 false 只能在status=200 的情況，ajax 才能在 success 接收到errors 這個 key 的訊息
+                # return JsonResponse({'valid': 'false', 'errors': form.errors}, status=200)
+                return JsonResponse({'errors': form.errors}, status=422)
+            elif form.is_valid():
+                # 因為這裡不是用 form 表，而是用 ajax 非同步傳遞給後端，所以不能直接用 form.save() 來儲存
+                try:
+                    mou_id = kwargs['mou_id']
+                    mous = self.model.objects.get(id=mou_id)
+                    mous.title = request.POST.get('title')
+                    mous.content = request.POST.get('content')
+                    mous.save()
+                except Exception as e:
+                    print(repr(e))
+                return JsonResponse({f'is_redirect': False, 'msg':f'update title and content successfully!'}, status=200)
+                # 這個 Response 是從 chuncked_upload 自定義寫的，是不是應該要改成 Django 的 JsonResponse()?
+                # return Response({'msg': f'update title and content successfully!'}, status=http_status.HTTP_200_OK)
 
-        # 或是 request.POST 可以替代如下
-        # form = RegisterMOUForm({'title':request.POST.get('title'), 'content':request.POST.get('content')})
-        if form.errors:
-            # 使用 valid 是 true 或 false 只能在status=200 的情況，ajax 才能在 success 接收到errors 這個 key 的訊息
-            # return JsonResponse({'valid': 'false', 'errors': form.errors}, status=200)
-            return JsonResponse({'errors': form.errors}, status=422)
-        elif form.is_valid():
-            # 因為這裡不是用 form 表，而是用 ajax 非同步傳遞給後端，所以不能直接用 form.save() 來儲存
-            try:
-                mou_id = kwargs['mou_id']
-                mous = self.model.objects.get(id=mou_id)
-                mous.title = request.POST.get('title')
-                mous.content = request.POST.get('content')
-                mous.save()
+    def delete(self, request, *args, **kwargs):
+        mou_id = kwargs['mou_id']
+        file_id = None
+        if 'file_id' in kwargs:
+            file_id = kwargs['file_id']
+        obj = self.get_object(file_id)
+        context = {'mou_id': mou_id}
+        if obj is not None:
+            obj.delete()
+            # 因為這是 ajax 去呼叫的，所以必須要 ajax 去 redirect 頁面
+            return JsonResponse({f'is_redirect': True, 'msg': f'Deleted file id = {file_id} successfully!'}, status=200)
+        else:
+            return JsonResponse({f'is_redirect': False, 'msg': f'Deleted file Fail because this file_is does not exist!'}, status=200)
 
-            except Exception as e:
-                print(repr(e))
-
-            return Response({'msg': f'update title and content successfully!'}, status=http_status.HTTP_200_OK)
+    def get_object(self, file_id):
+        id_ = self.kwargs['mou_id']
+        try:
+            obj = MyChunkedUpload.objects.get(chunkedupload_ptr_id=file_id)
+            return obj
+        except ObjectDoesNotExist:
+            obj = None
 
 
 class mousCreateView(View):
@@ -180,8 +204,8 @@ class mousCreateView(View):
         # 把上傳過的檔案名稱 pass to Template
         all_files_id_list = MyChunkedUpload.objects.filter(mou_id=mou_id)
         all_files_id_list = all_files_id_list.values_list('chunkedupload_ptr', flat = True)
-        all_files_name = ChunkedUpload.objects.filter(id__in=all_files_id_list).filter(status=2).values_list('filename', flat = True).order_by('-created_on')
-        context['all_files_name'] = all_files_name
+        mou_files = ChunkedUpload.objects.filter(id__in=all_files_id_list).filter(status=2).values('id', 'filename').order_by('-created_on')
+        context['mou_files'] = mou_files
 
         return render(request, self.template_name, context)
 

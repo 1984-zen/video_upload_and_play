@@ -32,15 +32,16 @@
 
                 <div class="well text-muted" style="padding-top: 4rem; padding-bottom: 4rem;">
                     <h3>已經上傳檔案:</h3>
-                    {% if all_files_name %}
-                        {% for file_name in all_files_name %}
+                    {% if mou_files %}
+                        {% for file in mou_files %}
                             <div>
-                                <span>{{ file_name }}</span>
+                                <span>{{ file.filename }}</span>
+                                    <button id="delete_uploaded_file" data-fileId="{{ file.id }}" class="btn btn-danger">Delete</button>
                             </div>
                         {% endfor %}
                     {% endif %}
                </div>
-
+               
                 <div class="form-popup" id="myForm">
                     <form method="POST" class="form-container" autocomplete="off">{% csrf_token %}
                         <div class="tab">
@@ -56,7 +57,6 @@
                 </div>
             </div>
         </div>
-
         <script src="{% static 'jquery/jquery-3.5.1.min.js' %}" charset="UTF-8" type="text/javascript"></script>
         <script src="{% static 'js/jquery.ui.widget.js' %}" charset="UTF-8" type="text/javascript"></script>
         <!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
@@ -183,16 +183,46 @@
                     dataType: "json",
                     success: function (data) {
                         // 以下只有在後端傳遞 200 status 的時候才能在success 情況下去 console.log()
-                        if (data['valid'] == 'true') {
-                            console.log(data.valid)
+                        if(data.is_redirect) {
+                            console.log(data.msg)
+                            window.location = `/upload/mous/${JSON.parse("{{ mou_id }}")}/`
+                        } else {
+                            console.log(data.msg)
                         }
-                        console.log(data['errors'])
                     },
                     error: function (request, status, error) {
                         // 把字數太少的限制顯示在 HTML
                         $("#form_messages_title_error").text(JSON.parse(request.responseText).errors.title[0])
                     }
                 });
+            })
+        </script>
+        <script>
+            $.ajaxSetup({ //https://docs.djangoproject.com/en/2.2/ref/csrf/#ajax
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", csrf);
+                }
+            });
+            $('button#delete_uploaded_file').click(function() {
+                var fileId = $(this).attr('data-fileId')
+                var url = `/api/mous/{{ mou_id }}/delete/${fileId}/`
+                $.ajax({
+                    type: "DELETE",
+                    url: url,
+                    data: {
+                        csrfmiddlewaretoken: csrf,
+                        mou_id: JSON.parse("{{ mou_id }}"),
+                    },
+                    dataType: "json",
+                    success: function (data) {
+                        if(data.is_redirect) {
+                            console.log(data.msg)
+                            window.location = `/upload/mous/${JSON.parse("{{ mou_id }}")}/`
+                        } else {
+                            console.log(data.msg)
+                        }
+                    }
+                });                       
             })
         </script>
         {% endblock %}

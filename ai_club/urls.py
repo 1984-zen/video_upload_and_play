@@ -19,6 +19,7 @@ urlpatterns = [
     path('api/chunked_upload_complete/', MyChunkedUploadCompleteView.as_view(), name='api_chunked_upload_complete'),
     path('api/chunked_upload/', MyChunkedUploadView.as_view(), name='api_chunked_upload'),
     path('api/mous/<int:mou_id>/update/', mousUpdate.as_view(), name='api_mou_update'),
+    path('api/mous/<int:mou_id>/delete/<int:file_id>/', mousUpdate.as_view(), name='api_mou_delete'),
     path('api/stream_video/<path:video_path>', views.stream_video, name = 'api_stream_video'),
 ]
 

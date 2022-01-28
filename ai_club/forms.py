@@ -3,7 +3,7 @@ from .models import mous
 
 class RegisterMOUForm(forms.ModelForm):
     title =     forms.CharField(
-                    required=True,
+                    required=False,
                     max_length=255,
                     label='讀書會標題 Title',
                     widget=forms.TextInput(
