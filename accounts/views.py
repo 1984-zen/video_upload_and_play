@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from accounts.forms import LoginForm, RegisterForm
 from django.conf import settings
 from accounts.models import Users
@@ -39,3 +39,9 @@ def login_view(request):
         else:
             print("login Fail!")
     return render(request, "login.html", {'login_form': login_form})
+
+
+def logout_view(request):
+    logout(request)
+    # request.user == Anon User
+    return redirect("/login/")

@@ -22,10 +22,16 @@ from wsgiref.util import FileWrapper
 import re
 import mimetypes
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth.mixins import LoginRequiredMixin
 
-class homeView(View):
+
+class homeView(LoginRequiredMixin, View):
     template_name = 'home.html'
     model = mous
+    login_url = '/login/'
+    redirect_field_name = 'redirect_to'
 
     def get(self, request, *args, **kwargs):
         select_date = SelectDateForm()
@@ -56,8 +62,6 @@ class homeView(View):
                 create_mou = self.model.objects.create(mou_date=mou_date)
                 mou_id = create_mou.id
         context['mou_id'] = mou_id
-        # except Exception as e:
-        #     print("here", repr(e))
 
         return HttpResponseRedirect(reverse("upload_file_page", kwargs=context))
 
@@ -118,9 +122,11 @@ def stream_video(request, video_path):
     return resp
 
 
-class mouView(View):
+class mouView(LoginRequiredMixin, View):
     template_name = 'room.html'
     model = mous
+    login_url = '/login/'
+    redirect_field_name = 'redirect_to'
 
     def get(self, request, *args, **kwargs):
         mou_id = kwargs['mou_id']
@@ -188,9 +194,11 @@ class mousUpdate(UpdateView, DeletionMixin):
             obj = None
 
 
-class mousCreateView(View):
+class mousCreateView(LoginRequiredMixin, View):
     template_name = 'upload_files.html'
     model = mous
+    login_url = '/login/'
+    redirect_field_name = 'redirect_to'
 
     def get(self, request, *args, **kwargs):
         mou_id = kwargs['mou_id']
