@@ -46,19 +46,20 @@ class homeView(View):
     def post(self, request, *args, **kwargs):
         select_date = SelectDateForm(request.POST)
         context = {}
-        try:
-            if select_date.is_valid():
-                mou_date = select_date.cleaned_data.get("mou_date")
+        # try:
+        if select_date.is_valid():
+            mou_date = select_date.cleaned_data.get("mou_date")
+            try:
                 mou_id = self.model.objects.filter(mou_date=mou_date).values_list('id', flat=True)[0]
-                if not mou_id:
-                    create_mou = self.model.objects.create(mou_date=mou_date)
-                    mou_id = create_mou.id
-                context['mou_id'] = mou_id
-                    
-        except Exception as e:
-            print(repr(e))
+                print("mou_id", mou_id)
+            except IndexError:
+                create_mou = self.model.objects.create(mou_date=mou_date)
+                mou_id = create_mou.id
+        context['mou_id'] = mou_id
+        # except Exception as e:
+        #     print("here", repr(e))
 
-        return HttpResponseRedirect(reverse("upload_file_page", kwargs={"mou_id": mou_id}))
+        return HttpResponseRedirect(reverse("upload_file_page", kwargs=context))
 
 range_re = re.compile(r'bytes\s*=\s*(\d+)\s*-\s*(\d*)', re.I)
 
