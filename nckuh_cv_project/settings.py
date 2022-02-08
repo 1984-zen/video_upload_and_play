@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'ai_club',
+    'accounts',
     'chunked_upload',
 ]
 
@@ -80,7 +81,7 @@ WSGI_APPLICATION = 'nckuh_cv_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ncku_cv',
+        'NAME': 'ai_club',
         'USER': 'root',
         'PASSWORD': '3064abee',
         'HOST': '127.0.0.1',
@@ -134,3 +135,5 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/' #這是環境變數
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') #這個不加會顯示不出來圖片/影片的路徑
+
+AUTH_USER_MODEL = 'accounts.Users'
