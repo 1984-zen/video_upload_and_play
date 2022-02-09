@@ -16,6 +16,12 @@
     <body>
         {% block content %}
         <div id="app">
+            <!-- 如果 user 是登入狀態 start -->
+            {% if user.is_authenticated %}
+                <span><a href="{% url 'logout' %}">log out</a></span>
+                <h3>Hi! Wellcome, {{ request.user.username }}</h3>
+            {% endif %}
+            <!-- 如果 user 是登入狀態 end -->
             <ol class="breadcrumb my-4">
                 <li class="breadcrumb-item"><a href="{% url 'home' %}">首頁</a></li>
                 <li class="breadcrumb-item">{{ mou_date }}讀書會</li>

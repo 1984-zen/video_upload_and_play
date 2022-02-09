@@ -15,22 +15,31 @@
     <body>
         {% block content %}
         <div id="app">
+            <!-- 如果 user 是登入狀態 start -->
+            {% if user.is_authenticated %}
+                <span><a href="{% url 'logout' %}">log out</a></span>
+                <h3>Hi! Wellcome, {{ request.user.username }}</h3>
+            {% endif %}
+            <!-- 如果 user 是登入狀態 end -->
             <ol class="breadcrumb my-4">
                 <li class="breadcrumb-item">首頁</li>
             </ol>
 
-            <div id="add_new_mou">
-                <form action="." method="POST">{% csrf_token %}
-                    <p><label><strong>{{ select_date.mou_date.label }}</strong></label></p>
-                    <p>{{ select_date.mou_date }}</p>
-                    <button id="select_date" type="submit">上傳讀書會內容</button>
-                </form>
-            </div>
+            {% if request.user.is_superuser %}
+                <div id="add_new_mou">
+                    <form action="." method="POST">{% csrf_token %}
+                        <p><label><strong>{{ select_date.mou_date.label }}</strong></label></p>
+                        <p>{{ select_date.mou_date }}</p>
+                        <button id="select_date" type="submit">上傳讀書會內容</button>
+                    </form>
+                </div>
+            {% endif %}
 
             <br>
             <br>
 
             <div id="mou_list">
+                <h3>讀書會列表:</h3>
                 {% for mou, days in mous %}
                 <div class="list-group">
                     <a href="{% url 'mou' mou_id=mou.id %}" class="list-group-item list-group-item-action flex-column align-items-start">

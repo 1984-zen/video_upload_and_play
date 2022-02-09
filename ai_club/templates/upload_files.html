@@ -15,6 +15,12 @@
     <body>
         {% block content %}
         <div id="app">
+            <!-- 如果 user 是登入狀態 start -->
+            {% if user.is_authenticated %}
+                <span><a href="{% url 'logout' %}">log out</a></span>
+                <h3>Hi! Wellcome, {{ request.user.username }}</h3>
+            {% endif %}
+            <!-- 如果 user 是登入狀態 end -->
             <ol class="breadcrumb my-4">
                 <li class="breadcrumb-item"><a href="{% url 'home' %}">首頁</a></li>
                 <li class="breadcrumb-item">上傳{{ mou_date }}讀書會檔案</li>
@@ -23,6 +29,7 @@
             <div id="add_new_mou">
                 {% csrf_token %}
                 <input id="chunked_upload" type="file" name="the_file">
+                <p style="padding: 5px;">接受檔案格式: ".mp4"</p>
                 <!-- 秀出上傳檔案的進度條 -->
                 <p id="progress"></p>
                 <!-- 秀出上傳檔案的每個細分的小檔案訊息 -->
