@@ -30,7 +30,7 @@
                     <form action="." method="POST">{% csrf_token %}
                         <p><label><strong>{{ select_date.mou_date.label }}</strong></label></p>
                         <p>{{ select_date.mou_date }}</p>
-                        <button id="select_date" type="submit">上傳讀書會內容</button>
+                        <button id="select_date" type="submit" class="btn btn-warning">新增/修改 讀書會房間</button>
                     </form>
                 </div>
             {% endif %}
@@ -41,7 +41,7 @@
             <div id="mou_list">
                 <h3>讀書會列表:</h3>
                 {% for mou, days in mous %}
-                <div class="list-group">
+                <div class="list-group mb-2">
                     <a href="{% url 'mou' mou_id=mou.id %}" class="list-group-item list-group-item-action flex-column align-items-start">
                         <div class="d-flex w-100 justify-content-between">
                             <h5 class="mb-1">{{ mou.title }}</h5>
@@ -53,7 +53,13 @@
                                 {% endif %}
                             </small>
                         </div>
-                        <p class="mb-1">{{ mou.content }}</p>
+                        <!-- 如果有 content 內容 start -->
+                        {% if mou.content %}
+                            <p class="mb-1">{{ mou.content }}</p>
+                        {% else %}
+                            <p class="mb-1"></p>
+                        {% endif %}
+                        <!-- 如果有 content 內容 end -->
                     </a>
                 </div>
                 {% endfor %}

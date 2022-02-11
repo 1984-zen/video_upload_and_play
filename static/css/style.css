@@ -41,6 +41,14 @@ html {
 #add_new_mou form > ul {
     padding-top: 30px;
 }
+#mou_attachments {
+    background-color: rgb(233, 233, 233);
+    padding: 20px;
+    margin: 1.5rem 0;
+}
+.movie_btn_list .btn {
+    margin: 10px;
+}
 /* form 表單的 css start */
 textarea {
     padding: 10px;

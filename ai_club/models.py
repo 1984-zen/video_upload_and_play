@@ -16,16 +16,9 @@ class mous(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created_at = dateformat.format(timezone.now(), 'Y-m-d H:i:s')
+            self.title = f"{dateformat.format(timezone.now(), 'Y-m-d')} 讀書會"
         self.updated_at = dateformat.format(timezone.now(), 'Y-m-d H:i:s')
         return super(mous, self).save(*args, **kwargs)
-    def update_mous_fields(self, title, content):
-        '''更新 mous 表的 title 和 content'''
-        if title is not None:
-            self.title = title
-        if content is not None:
-            self.content = content
-        # 儲存後會更新 updated_at 的時間
-        self.save()
 
 class files(models.Model):
     file_name = models.CharField(max_length=255)

@@ -6,6 +6,8 @@
     var skipButton = document.querySelectorAll('.player__button[data-skip]');
     var progressBarOut = document.querySelector('.progress');
     var progressBarIn = document.querySelector('.progress__filled');
+    // 全螢幕
+    const fullScreen = document.querySelector('.full__screen');
 
     selectVideo.currentTime = 0;
 
@@ -24,6 +26,9 @@
     selectVideo.addEventListener('timeupdate', progressing);
     progressBarOut.addEventListener('mousedown', addDragProgress);
     progressBarOut.addEventListener('mouseup', removeDragProgress);
+    // 全螢幕 start
+    fullScreen.addEventListener('click', goFullScreen);
+    // 全螢幕 end
 
     //Create Functions
     function playToggle() {
@@ -73,12 +78,15 @@
         let progressBarWidth = progressBarOut.offsetWidth;
         let videoProgress = mouseX / progressBarWidth;
         let newPosition = videoDuration * videoProgress;
-        // console.log("newPosition", newPosition)
-        // console.log("selectVideo.currentTime", selectVideo.currentTime)
-        // console.log("start", selectVideo.played.start(0) , "end", selectVideo.played.end(0))
-        selectVideo.currentTime = newPosition;
 
+        selectVideo.currentTime = newPosition;
     };
+    // 全螢幕 start
+    function goFullScreen() {
+        var requestMethod = selectVideo.requestFullScreen || selectVideo.webkitRequestFullScreen || selectVideo.mozRequestFullScreen || selectVideo.msRequestFullScreen;
+        requestMethod.call(selectVideo);
+    }
+    // 全螢幕 end
 
     /*===========Add Keyboard Event===========*/
     window.addEventListener('keydown', keyboardFunction);

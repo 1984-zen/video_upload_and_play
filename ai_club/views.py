@@ -135,10 +135,13 @@ class mouView(LoginRequiredMixin, View):
         # icontains 的 i 就是不分大小寫
         mou_medias = ChunkedUpload.objects.filter(id__in=all_files_id_list).filter(filename__icontains='.mp4').filter(status=2).values('filename','file').order_by('-created_on')
         mou_other_files = ChunkedUpload.objects.filter(id__in=all_files_id_list).exclude(filename__icontains='.mp4').filter(status=2).values('filename','file').order_by('-created_on')
+        # 找出讀書會的日期
+        mou_date = mous.objects.filter(id=mou_id).values_list('mou_date', flat=True)[0]
         context = {
             'mou_medias': mou_medias,
-            'mou_other_files': mou_other_files
-            }
+            'mou_other_files': mou_other_files,
+            'mou_date': mou_date
+        }
 
         return render(request, self.template_name, context)
 
@@ -149,7 +152,7 @@ class mousUpdate(UpdateView, DeletionMixin):
     fields = ['title','content']
 
     def post(self, request, *args, **kwargs):
-        if request.is_ajax() and request.POST.get('title') and request.POST.get('content'):
+        if request.is_ajax() and request.POST.get('title'):
             form = RegisterMOUForm(request.POST)
             # 或是 request.POST 可以替代如下
             # form = RegisterMOUForm({'title':request.POST.get('title'), 'content':request.POST.get('content')})

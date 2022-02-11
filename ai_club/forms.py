@@ -1,5 +1,6 @@
 from django import forms
 from .models import mous
+from django.utils import timezone
 
 class RegisterMOUForm(forms.ModelForm):
     title =     forms.CharField(
@@ -43,8 +44,9 @@ class RegisterMOUForm(forms.ModelForm):
 class SelectDateForm(forms.ModelForm):
     mou_date =  forms.DateField(
                 required=True,
-                label = '請選擇讀書會日期',
-                widget=forms.SelectDateWidget()
+                label = '請選擇讀書會日期：',
+                widget=forms.SelectDateWidget(),
+                initial=timezone.now()
             )
 
     class Meta:
