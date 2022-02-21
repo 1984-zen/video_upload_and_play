@@ -43,7 +43,7 @@
                         {% for file in mou_files %}
                             <div>
                                 <span>{{ file.filename }}</span>
-                                    <button id="delete_uploaded_file" data-fileId="{{ file.id }}" class="btn btn-danger">Delete</button>
+                                    <button id="delete_uploaded_file" data-fileId="{{ file.id }}" class="btn btn-danger mb-2">Delete</button>
                             </div>
                         {% endfor %}
                     {% endif %}
@@ -149,9 +149,17 @@
                         },
                         dataType: "json",
                         success: function (data) {
-                            // 這裡因為上傳完畢會立即轉跳頁面，所以會來不及看到這個 messages_done 的訊息
-                            $("#messages_done").append($('<p>').text(JSON.stringify(data)));
-                                window.location = `/upload/mous/${JSON.parse("{{ mou_id }}")}/`
+                            let add_new_success_upload_complete_button = '<div>';
+                            add_new_success_upload_complete_button += `\
+                                <span>${data.file_name}</span> \
+                                <button id="delete_uploaded_file" data-fileid="${data.file_id}" class="btn btn-danger"> \
+                                    Delete \
+                                </button>`;
+                            add_new_success_upload_complete_button += '</div>';
+
+                            $("#messages_done").append($('<div class="alert alert-success" role="alert">').text(JSON.stringify(data.message)));
+                            $(add_new_success_upload_complete_button).insertAfter(".well.text-muted h3");
+                            // 不做轉跳動作以免中斷 user 可能正在輸入描述文字
                         }
                     });
                 },

@@ -271,4 +271,6 @@ class MyChunkedUploadCompleteView(ChunkedUploadCompleteView):
         return {
             'message':  ("You successfully uploaded '%s' (%s bytes)!" %
                         (chunked_upload.filename, chunked_upload.offset)),
+            'file_name': chunked_upload.filename,
+            'file_id': chunked_upload.id,
             }
