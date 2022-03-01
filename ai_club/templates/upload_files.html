@@ -41,9 +41,9 @@
                     <h3>已經上傳檔案:</h3>
                     {% if mou_files %}
                         {% for file in mou_files %}
-                            <div>
+                            <div class="uploaded_file">
                                 <span>{{ file.filename }}</span>
-                                    <button id="delete_uploaded_file" data-fileId="{{ file.id }}" class="btn btn-danger mb-2">Delete</button>
+                                <button data-fileId="{{ file.id }}" class="btn btn-danger mb-2">Delete</button>
                             </div>
                         {% endfor %}
                     {% endif %}
@@ -149,10 +149,10 @@
                         },
                         dataType: "json",
                         success: function (data) {
-                            let add_new_success_upload_complete_button = '<div>';
+                            let add_new_success_upload_complete_button = '<div class="uploaded_file">';
                             add_new_success_upload_complete_button += `\
                                 <span>${data.file_name}</span> \
-                                <button id="delete_uploaded_file" data-fileid="${data.file_id}" class="btn btn-danger"> \
+                                <button data-fileid="${data.file_id}" class="btn btn-danger mb-2"> \
                                     Delete \
                                 </button>`;
                             add_new_success_upload_complete_button += '</div>';
@@ -218,26 +218,30 @@
                     xhr.setRequestHeader("X-CSRFToken", csrf);
                 }
             });
-            $('button#delete_uploaded_file').click(function() {
-                var fileId = $(this).attr('data-fileId')
-                var url = `/api/mous/{{ mou_id }}/delete/${fileId}/`
-                $.ajax({
-                    type: "DELETE",
-                    url: url,
-                    data: {
-                        csrfmiddlewaretoken: csrf,
-                        mou_id: JSON.parse("{{ mou_id }}"),
-                    },
-                    dataType: "json",
-                    success: function (data) {
-                        if(data.is_redirect) {
-                            console.log(data.msg)
-                            window.location = `/upload/mous/${JSON.parse("{{ mou_id }}")}/`
-                        } else {
-                            console.log(data.msg)
+            $('.well.text-muted').on('click', 'button', function() {
+                let confirmation = confirm("Are you sure you want to delete this item?");
+
+                if (confirmation) {
+                    var fileId = $(this).attr('data-fileId')
+                    var url = `/api/mous/{{ mou_id }}/delete/${fileId}/`
+                    $.ajax({
+                        type: "DELETE",
+                        url: url,
+                        data: {
+                            csrfmiddlewaretoken: csrf,
+                            mou_id: JSON.parse("{{ mou_id }}"),
+                        },
+                        dataType: "json",
+                        success: function (data) {
+                            if(data.is_redirect) {
+                                console.log(data.msg)
+                                window.location = `/upload/mous/${JSON.parse("{{ mou_id }}")}/`
+                            } else {
+                                console.log(data.msg)
+                            }
                         }
-                    }
-                });                       
+                    });
+                }
             })
         </script>
         {% endblock %}
