@@ -50,20 +50,34 @@ class homeView(LoginRequiredMixin, View):
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
+        # request.POST = {'mou_date_month': ['3'], 'mou_date_day': ['3'], 'mou_date_year': ['2022']}
         select_date = SelectDateForm(request.POST)
+        mou_date_month = request.POST.get("mou_date_month")
+        mou_date_day = request.POST.get("mou_date_day")
+        mou_date_year = request.POST.get("mou_date_year")
         context = {}
-        # try:
+        is_create_room = False
+
+        if (request.POST.get("is_confirm")):
+            is_create_room = request.POST.get("is_confirm")
+
         if select_date.is_valid():
             mou_date = select_date.cleaned_data.get("mou_date")
             try:
+                # 先用 mou_date 去尋這個日期是否有開過房間
                 mou_id = self.model.objects.filter(mou_date=mou_date).values_list('id', flat=True)[0]
-                print("mou_id", mou_id)
             except IndexError:
-                create_mou = self.model.objects.create(mou_date=mou_date)
-                mou_id = create_mou.id
-        context['mou_id'] = mou_id
+                # 如果沒有這個日期的房間，且使用者尚未回答是否要創建房間(默認 False)，就跳到 confirm_create_room_page 頁面
+                if is_create_room == False: # 待使用者 confirm 回答
+                    return render(request, 'confirm_create_room_page.html', {'mou_date': mou_date, 'mou_date_year': mou_date_year,
+                                                                            'mou_date_day': mou_date_day, 'mou_date_month': mou_date_month})
+                elif is_create_room == "True": # 如果使用者回答 yes，就幫他建立新房間
+                    create_mou = self.model.objects.create(mou_date=mou_date)
+                    mou_id = create_mou.id
 
-        return HttpResponseRedirect(reverse("upload_file_page", kwargs=context))
+            context['mou_id'] = mou_id
+
+            return HttpResponseRedirect(reverse("upload_file_page", kwargs=context))
 
 range_re = re.compile(r'bytes\s*=\s*(\d+)\s*-\s*(\d*)', re.I)
 

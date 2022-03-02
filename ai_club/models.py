@@ -16,7 +16,7 @@ class mous(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created_at = dateformat.format(timezone.now(), 'Y-m-d H:i:s')
-            self.title = f"{dateformat.format(timezone.now(), 'Y-m-d')} 讀書會"
+            self.title = f"{self.mou_date} 讀書會"
         self.updated_at = dateformat.format(timezone.now(), 'Y-m-d H:i:s')
         return super(mous, self).save(*args, **kwargs)
 
